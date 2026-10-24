@@ -8,6 +8,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Clase extends Model
 {
+    public function codigoManual(): ?string
+    {
+        return $this->token_qr ? $this->id.'-'.strtoupper(substr(hash('sha256', $this->token_qr), 0, 10)) : null;
+    }
+
     protected $fillable = [
         'materia_id',
         'grupo_id',
@@ -24,6 +29,7 @@ class Clase extends Model
     {
         return [
             'fecha' => 'date',
+            'cerrada_at' => 'datetime',
             'qr_expira_at' => 'datetime',
         ];
     }

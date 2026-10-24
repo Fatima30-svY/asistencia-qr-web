@@ -14,11 +14,14 @@ class RiesgoController extends Controller
         $filas = collect();
 
         if ($modeloListo) {
-            $alumnos = User::where('rol', 'alumno')->get();
+            $grupoIds = Clase::where('docente_id', auth()->id())->pluck('grupo_id');
+            $alumnos = User::where('rol', 'alumno')
+                ->when(auth()->user()->rol === 'docente', fn ($query) => $query->whereIn('grupo_id', $grupoIds))->get();
 
             foreach ($alumnos as $alumno) {
                 // Contexto: la clase más reciente de su grupo (día y horario)
                 $clase = Clase::where('grupo_id', $alumno->grupo_id)
+                    ->when(auth()->user()->rol === 'docente', fn ($query) => $query->where('docente_id', auth()->id()))
                     ->orderByDesc('fecha')
                     ->orderByDesc('hora_inicio')
                     ->first();

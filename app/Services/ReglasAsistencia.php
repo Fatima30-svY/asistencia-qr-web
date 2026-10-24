@@ -7,6 +7,7 @@ use App\Models\Clase;
 use App\Models\User;
 use Carbon\Carbon;
 use DomainException;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Sistema de reglas normales (se evalúan en orden).
@@ -20,13 +21,18 @@ use DomainException;
  */
 class ReglasAsistencia
 {
-    public function __construct(private ExcepcionesAsistencia $excepciones)
-    {
-    }
+    public function __construct(private ExcepcionesAsistencia $excepciones) {}
 
     public function registrarEscaneo(Clase $clase, User $alumno, string $token, ?Carbon $ahora = null): Asistencia
     {
         $ahora ??= now();
+
+        if ($alumno->rol !== 'alumno' || $clase->cerrada_at) {
+            throw new DomainException('Solo los alumnos pueden registrar asistencia y la clase debe estar abierta.');
+        }
+        if ($ahora->lessThan($this->inicio($clase))) {
+            throw new DomainException('La clase todavía no comienza.');
+        }
 
         // R1
         if (! $clase->token_qr || ! hash_equals($clase->token_qr, $token)) {
@@ -57,13 +63,12 @@ class ReglasAsistencia
         $estado = $ahora->lessThanOrEqualTo($limite) ? 'asistencia' : 'retardo';
 
         return Asistencia::create([
-            'clase_id'     => $clase->id,
-            'alumno_id'    => $alumno->id,
+            'clase_id' => $clase->id,
+            'alumno_id' => $alumno->id,
             'escaneado_at' => $ahora,
-            'estado'       => $estado,
+            'estado' => $estado,
         ]);
     }
-
 
     /**
      * Cierra la clase: a quien no escaneó le aplica la regla general
@@ -71,6 +76,21 @@ class ReglasAsistencia
      * Devuelve cuántos registros creó.
      */
     public function cerrarClase(Clase $clase): int
+    {
+        return DB::transaction(function () use ($clase) {
+            $clase = Clase::whereKey($clase->id)->lockForUpdate()->firstOrFail();
+            if ($clase->cerrada_at) {
+                return 0;
+            }
+            $creados = $this->completarRegistros($clase);
+            $clase->cerrada_at = now();
+            $clase->save();
+
+            return $creados;
+        });
+    }
+
+    private function completarRegistros(Clase $clase): int
     {
         $creados = 0;
 
@@ -94,10 +114,10 @@ class ReglasAsistencia
             }
 
             Asistencia::create([
-                'clase_id'  => $clase->id,
+                'clase_id' => $clase->id,
                 'alumno_id' => $alumno->id,
 
-                'estado'    => $estado,
+                'estado' => $estado,
             ]);
             $creados++;
         }

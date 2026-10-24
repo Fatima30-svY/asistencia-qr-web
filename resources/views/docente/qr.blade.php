@@ -8,7 +8,6 @@
         </p>
     </x-slot>
 
-    <meta http-equiv="refresh" content="15">
 
     @php
         $conteo = $clase->asistencias->countBy('estado');
@@ -25,11 +24,12 @@
 
             <div class="grid gap-6 md:grid-cols-5">
                 <div class="rounded-lg border border-slate-200 bg-white p-6 text-center shadow-sm md:col-span-2">
-                    <div class="inline-block rounded-md border border-slate-200 p-3">
-                        {!! $svg !!}
+                    <div data-qr-display data-url="{{ route('docente.qr', $clase) }}" data-finalizada="{{ $finalizada ? '1' : '0' }}">
+                        @include('docente.partials.qr-codigo')
                     </div>
-                    <p class="mt-4 text-sm text-slate-500">Vence a las {{ $clase->qr_expira_at->format('H:i') }}</p>
+                    <p data-qr-status class="mt-3 text-xs text-slate-500" role="status"></p>
 
+                    @if (! $clase->cerrada_at)
                     <form method="POST" action="{{ route('docente.cerrar', $clase) }}" class="mt-5"
                           onsubmit="return confirm('¿Cerrar la clase? A quien no escaneó se le pondrá falta.')">
                         @csrf
@@ -37,9 +37,19 @@
                             Cerrar clase
                         </button>
                     </form>
+                    @endif
                 </div>
 
                 <div class="space-y-6 md:col-span-3">
+                    <x-asistencia-grafica :conteo="$conteo" />
+                    <section class="rounded-lg border border-slate-200 bg-white p-5">
+                        <h3 class="font-semibold">Alumnos inscritos en el grupo ({{ $clase->grupo->alumnos->count() }})</h3>
+                        @forelse ($clase->grupo->alumnos as $alumno)
+                            <p class="mt-2 text-sm">{{ $alumno->name }} · {{ ucfirst($clase->asistencias->firstWhere('alumno_id', $alumno->id)?->estado ?? 'sin registro') }}</p>
+                        @empty
+                            <p class="mt-2 text-sm text-slate-600">El director debe asignar alumnos a este grupo desde Administración escolar.</p>
+                        @endforelse
+                    </section>
                     <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
                         <div class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
                             <p class="text-2xl font-semibold text-emerald-600">{{ $conteo->get('asistencia', 0) }}</p>
@@ -84,7 +94,7 @@
                                 <li class="py-3 text-slate-500">Aún no hay registros.</li>
                             @endforelse
                         </ul>
-                        <p class="mt-3 text-xs text-slate-400">La página se actualiza sola cada 15 segundos.</p>
+                        <a href="{{ route('docente.qr', $clase) }}" class="mt-3 inline-block text-sm text-blue-700 underline">Actualizar lista y QR</a>
                     </div>
                 </div>
             </div>

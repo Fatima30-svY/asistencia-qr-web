@@ -2,13 +2,16 @@
     <x-slot name="header">
         <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
-                <h2 class="text-2xl font-semibold text-slate-900">Mis clases</h2>
+                <h2 class="text-2xl font-semibold text-slate-900">{{ auth()->user()->rol === 'admin' ? 'Clases' : 'Mis clases' }}</h2>
                 <p class="mt-1 text-sm text-slate-500">Abre el QR de una clase en curso para que tu grupo registre su asistencia.</p>
             </div>
+            @if (auth()->user()->rol === 'admin')
+            <a href="{{ route('admin.index') }}" class="text-sm text-blue-700 underline">Administrar grupos, materias, docentes y alumnos</a>
             <a href="{{ route('docente.crear') }}"
                class="rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800">
                 Programar clase
             </a>
+            @endif
         </div>
     </x-slot>
 
@@ -43,7 +46,7 @@
                                         $fin->addDay();
                                     }
 
-                                    $estado = now()->lt($ini) ? 'Próxima' : (now()->lte($fin) ? 'En curso' : 'Terminada');
+                                    $estado = $clase->cerrada_at ? 'Cerrada' : (now()->lt($ini) ? 'Próxima' : (now()->lte($fin) ? 'En curso' : 'Terminada'));
 
                                     $badge = match ($estado) {
                                         'En curso' => 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
@@ -60,7 +63,7 @@
                                         <span class="rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset {{ $badge }}">{{ $estado }}</span>
                                     </td>
                                     <td class="px-5 py-4 text-right">
-                                        @if ($estado === 'Terminada')
+                                        @if (in_array($estado, ['Terminada', 'Cerrada']))
                                             <a href="{{ route('docente.qr', $clase) }}"
                                                class="rounded-md border border-slate-300 px-3 py-1.5 text-slate-700 hover:bg-slate-50">
                                                 Ver registro
@@ -76,7 +79,7 @@
                             @empty
                                 <tr>
                                     <td colspan="6" class="px-5 py-10 text-center text-slate-500">
-                                        No tienes clases registradas. Usa "Programar clase" para crear una.
+                                        {{ auth()->user()->rol === 'admin' ? 'No hay clases registradas. Usa "Programar clase" para crear una.' : 'Aún no tienes clases asignadas. Solicita al director que programe una clase para ti.' }}
                                     </td>
                                 </tr>
                             @endforelse

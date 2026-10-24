@@ -29,21 +29,41 @@
             </a>
         </div>
 
-        @if ($rol === 'docente')
+        @if ($rol === 'admin')
+            <div class="space-y-1">
+                <p class="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Control escolar</p>
+                @foreach (['index' => 'Resumen', 'docentes.index' => 'Docentes', 'alumnos.index' => 'Alumnos', 'materias.index' => 'Materias', 'grupos.index' => 'Grupos'] as $ruta => $etiqueta)
+                    @php
+                        $estaActivo = $ruta === 'index' ? request()->routeIs('admin.index') : request()->routeIs('admin.'.str_replace('.index', '', $ruta).'.*');
+                        if ($ruta === 'grupos.index') { $estaActivo = $estaActivo || request()->routeIs('admin.grupo.*'); }
+                    @endphp
+                    <a href="{{ route('admin.'.$ruta) }}" class="flex items-center gap-3 rounded-md px-3 py-2.5 {{ $estaActivo ? $activo : $inactivo }}">
+                        <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="{{ match ($etiqueta) { 'Docentes', 'Alumnos' => 'M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2m14-14a4 4 0 110 8M9 11a4 4 0 100-8 4 4 0 000 8', 'Materias' => 'M4 4h6a2 2 0 012 2v15a3 3 0 00-3-3H4V4zm16 0h-6a2 2 0 00-2 2v15a3 3 0 013-3h5V4z', default => 'M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 0h6v6h-6v-6z' } }}" /></svg>
+                        {{ $etiqueta }}
+                    </a>
+                @endforeach
+            </div>
+        @endif
+
+        @if ($rol === 'alumno')
+            <a href="{{ route('alumno.index') }}" class="block rounded-md px-3 py-2 {{ request()->routeIs('alumno.*') ? $activo : $inactivo }}">Escanear y ver mi asistencia</a>
+        @endif
+
+        @if ($rol === 'admin' || ($rol === 'docente' && $usuario->aprobado_at))
 
             <div>
                 <p class="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Docencia</p>
-                <a href="{{ route('docente.clases') }}"
-                   class="flex items-center gap-3 rounded-md px-3 py-2 {{ request()->routeIs('docente.*') ? $activo : $inactivo }}">
+                <a href="{{ $rol === 'admin' ? route('admin.clases.index') : route('docente.clases') }}"
+                   class="flex items-center gap-3 rounded-md px-3 py-2 {{ request()->routeIs('docente.*', 'admin.clases.*') ? $activo : $inactivo }}">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
                     </svg>
-                    Mis clases
+                    {{ $rol === 'admin' ? 'Clases' : 'Mis clases' }}
                 </a>
             </div>
         @endif
 
-        @if (in_array($rol, ['admin', 'docente']))
+        @if ($rol === 'admin' || ($rol === 'docente' && $usuario->aprobado_at))
             <div>
                 <p class="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Gestión</p>
                 <a href="{{ route('excepciones.index') }}"
@@ -71,7 +91,7 @@
 
     <div class="border-t border-slate-800 p-4">
         <a href="{{ route('profile.edit') }}" class="block text-sm font-medium text-white hover:underline">{{ $usuario->name }}</a>
-        <p class="mb-3 text-xs text-slate-400">{{ ucfirst($rol) }}</p>
+        <p class="mb-3 text-xs text-slate-400">{{ $rol === 'admin' ? 'Director / Administrador' : ucfirst($rol) }}</p>
 
         <form method="POST" action="{{ route('logout') }}">
             @csrf

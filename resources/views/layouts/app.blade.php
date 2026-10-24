@@ -44,5 +44,6 @@
                 </main>
             </div>
         </div>
+        <x-asistente-escolar />
     </body>
 </html>

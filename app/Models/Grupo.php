@@ -3,11 +3,17 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Grupo extends Model
 {
     protected $fillable = ['nombre', 'semestre'];
+
+    public function materias(): BelongsToMany
+    {
+        return $this->belongsToMany(Materia::class, 'grupo_materia');
+    }
 
     public function alumnos(): HasMany
     {

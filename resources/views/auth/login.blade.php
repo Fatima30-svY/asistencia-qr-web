@@ -35,4 +35,9 @@
 
         <x-primary-button class="w-full">Entrar</x-primary-button>
     </form>
+
+    <p class="mt-6 text-center text-sm text-slate-600">
+        ¿No tienes una cuenta?
+        <a class="font-medium text-blue-700 hover:underline" href="{{ route('register') }}">Regístrate</a>
+    </p>
 </x-guest-layout>

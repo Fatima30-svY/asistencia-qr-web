@@ -1,4 +1,6 @@
 import './bootstrap';
+import './qr-display';
+import './assistant';
 
 import Alpine from 'alpinejs';
 
